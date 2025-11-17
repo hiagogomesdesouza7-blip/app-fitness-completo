@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, MessageCircle, Share2, Dumbbell, Apple, User, Settings, Bell, Plus, TrendingUp, Calendar, Award, Trophy, Star, Zap, Target, Crown, Medal, Flame } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Dumbbell, Apple, User, Settings, Bell, Plus, TrendingUp, Calendar, Award, Trophy, Star, Zap, Target, Crown, Medal, Flame, Users, Sparkles, TrendingDown, Activity, Brain, Search, Clock, ChevronRight, AlertCircle, CheckCircle, ArrowRight, Utensils, Coffee, Salad, Pizza } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -26,6 +26,7 @@ type Post = {
   likes: number
   comments: number
   liked: boolean
+  isAIGenerated?: boolean
 }
 
 type Workout = {
@@ -45,6 +46,41 @@ type Meal = {
   carbs: number
   fat: number
   time: string
+}
+
+type FoodItem = {
+  id: number
+  name: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  portion: string
+  category: string
+}
+
+type DailyLog = {
+  id: number
+  date: string
+  foodItem: FoodItem
+  quantity: number
+  mealType: 'Café da Manhã' | 'Almoço' | 'Lanche' | 'Jantar' | 'Ceia'
+}
+
+type NutritionGoal = {
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+type FoodSubstitution = {
+  id: number
+  original: string
+  substitute: string
+  reason: string
+  caloriesDiff: number
+  matchPercentage: number
 }
 
 type CheckIn = {
@@ -74,12 +110,148 @@ type LeaderboardUser = {
   streak: number
 }
 
+type SuggestedConnection = {
+  id: number
+  name: string
+  avatar: string
+  commonInterests: string[]
+  matchPercentage: number
+  goals: string[]
+}
+
+type WeeklyActivity = {
+  id: number
+  activity: string
+  count: number
+  trend: 'up' | 'down' | 'stable'
+  icon: string
+}
+
 export default function FitnessApp() {
   const [activeTab, setActiveTab] = useState('feed')
   const [notifications, setNotifications] = useState(3)
   const [userPoints, setUserPoints] = useState(1250)
   const [userLevel, setUserLevel] = useState(8)
   const [userStreak, setUserStreak] = useState(12)
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+  const [searchFood, setSearchFood] = useState('')
+  const [selectedMealType, setSelectedMealType] = useState<'Café da Manhã' | 'Almoço' | 'Lanche' | 'Jantar' | 'Ceia'>('Café da Manhã')
+  
+  const [nutritionGoals] = useState<NutritionGoal>({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fat: 65
+  })
+
+  const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([
+    {
+      id: 1,
+      date: '2024-01-15',
+      foodItem: {
+        id: 1,
+        name: 'Aveia com Banana',
+        calories: 350,
+        protein: 12,
+        carbs: 58,
+        fat: 8,
+        portion: '1 tigela (200g)',
+        category: 'Café da Manhã'
+      },
+      quantity: 1,
+      mealType: 'Café da Manhã'
+    },
+    {
+      id: 2,
+      date: '2024-01-15',
+      foodItem: {
+        id: 2,
+        name: 'Frango Grelhado',
+        calories: 280,
+        protein: 45,
+        carbs: 0,
+        fat: 10,
+        portion: '150g',
+        category: 'Proteína'
+      },
+      quantity: 1,
+      mealType: 'Almoço'
+    },
+    {
+      id: 3,
+      date: '2024-01-15',
+      foodItem: {
+        id: 3,
+        name: 'Arroz Integral',
+        calories: 240,
+        protein: 7,
+        carbs: 52,
+        fat: 2,
+        portion: '1 xícara (150g)',
+        category: 'Carboidrato'
+      },
+      quantity: 1,
+      mealType: 'Almoço'
+    }
+  ])
+
+  const [foodDatabase] = useState<FoodItem[]>([
+    { id: 1, name: 'Aveia com Banana', calories: 350, protein: 12, carbs: 58, fat: 8, portion: '1 tigela (200g)', category: 'Café da Manhã' },
+    { id: 2, name: 'Frango Grelhado', calories: 280, protein: 45, carbs: 0, fat: 10, portion: '150g', category: 'Proteína' },
+    { id: 3, name: 'Arroz Integral', calories: 240, protein: 7, carbs: 52, fat: 2, portion: '1 xícara (150g)', category: 'Carboidrato' },
+    { id: 4, name: 'Batata Doce', calories: 180, protein: 4, carbs: 41, fat: 0.3, portion: '1 média (150g)', category: 'Carboidrato' },
+    { id: 5, name: 'Salmão Grelhado', calories: 350, protein: 38, carbs: 0, fat: 22, portion: '150g', category: 'Proteína' },
+    { id: 6, name: 'Brócolis Cozido', calories: 55, protein: 4, carbs: 11, fat: 0.6, portion: '1 xícara (150g)', category: 'Vegetal' },
+    { id: 7, name: 'Ovo Cozido', calories: 78, protein: 6, carbs: 0.6, fat: 5, portion: '1 unidade', category: 'Proteína' },
+    { id: 8, name: 'Whey Protein', calories: 120, protein: 24, carbs: 3, fat: 1.5, portion: '1 scoop (30g)', category: 'Suplemento' },
+    { id: 9, name: 'Banana', calories: 105, protein: 1.3, carbs: 27, fat: 0.4, portion: '1 média', category: 'Fruta' },
+    { id: 10, name: 'Iogurte Grego', calories: 100, protein: 17, carbs: 6, fat: 0.7, portion: '170g', category: 'Laticínio' },
+    { id: 11, name: 'Pão Integral', calories: 80, protein: 4, carbs: 15, fat: 1, portion: '1 fatia', category: 'Carboidrato' },
+    { id: 12, name: 'Azeite de Oliva', calories: 120, protein: 0, carbs: 0, fat: 14, portion: '1 colher sopa', category: 'Gordura' }
+  ])
+
+  const [foodSubstitutions] = useState<FoodSubstitution[]>([
+    {
+      id: 1,
+      original: 'Arroz Branco',
+      substitute: 'Arroz Integral',
+      reason: 'Mais fibras e nutrientes, melhor controle glicêmico',
+      caloriesDiff: -20,
+      matchPercentage: 95
+    },
+    {
+      id: 2,
+      original: 'Pão Francês',
+      substitute: 'Pão Integral',
+      reason: 'Menor índice glicêmico, mais saciedade',
+      caloriesDiff: -30,
+      matchPercentage: 90
+    },
+    {
+      id: 3,
+      original: 'Batata Frita',
+      substitute: 'Batata Doce Assada',
+      reason: 'Menos gordura, mais vitaminas e fibras',
+      caloriesDiff: -180,
+      matchPercentage: 85
+    },
+    {
+      id: 4,
+      original: 'Refrigerante',
+      substitute: 'Água com Limão',
+      reason: 'Zero calorias, hidratação, sem açúcar',
+      caloriesDiff: -140,
+      matchPercentage: 70
+    },
+    {
+      id: 5,
+      original: 'Macarrão Branco',
+      substitute: 'Macarrão Integral',
+      reason: 'Mais proteínas e fibras, digestão mais lenta',
+      caloriesDiff: -15,
+      matchPercentage: 92
+    }
+  ])
   
   const [posts, setPosts] = useState<Post[]>([
     {
@@ -115,6 +287,48 @@ export default function FitnessApp() {
       liked: false
     }
   ])
+
+  const [suggestedConnections] = useState<SuggestedConnection[]>([
+    {
+      id: 1,
+      name: 'Carlos Mendes',
+      avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=100&h=100&fit=crop',
+      commonInterests: ['Musculação', 'Dieta Low Carb'],
+      matchPercentage: 92,
+      goals: ['Ganho de massa', 'Definição muscular']
+    },
+    {
+      id: 2,
+      name: 'Fernanda Lima',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop',
+      commonInterests: ['Corrida', 'Yoga'],
+      matchPercentage: 87,
+      goals: ['Resistência', 'Flexibilidade']
+    },
+    {
+      id: 3,
+      name: 'Ricardo Alves',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop',
+      commonInterests: ['HIIT', 'Dieta Balanceada'],
+      matchPercentage: 85,
+      goals: ['Perda de peso', 'Condicionamento']
+    }
+  ])
+
+  const [weeklyActivities] = useState<WeeklyActivity[]>([
+    { id: 1, activity: 'Treinos de Força', count: 342, trend: 'up', icon: '💪' },
+    { id: 2, activity: 'Corridas', count: 218, trend: 'up', icon: '🏃' },
+    { id: 3, activity: 'Yoga e Alongamento', count: 156, trend: 'stable', icon: '🧘' },
+    { id: 4, activity: 'Dietas Low Carb', count: 189, trend: 'up', icon: '🥗' },
+    { id: 5, activity: 'HIIT Cardio', count: 134, trend: 'down', icon: '🔥' }
+  ])
+
+  const [aiTipOfDay] = useState({
+    title: 'Dica Personalizada do Dia',
+    content: 'Com base na sua sequência de 12 dias e progresso em treinos de força, recomendamos adicionar um dia de descanso ativo esta semana. Experimente uma sessão leve de yoga ou caminhada para otimizar sua recuperação muscular!',
+    category: 'Recuperação',
+    relevance: 95
+  })
 
   const [workouts] = useState<Workout[]>([
     { id: 1, name: 'Treino de Peito e Tríceps', duration: '45 min', exercises: 8, difficulty: 'Médio', category: 'Força' },
@@ -164,7 +378,6 @@ export default function FitnessApp() {
         ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
         : post
     ))
-    // Adiciona pontos por interação no feed
     if (!posts.find(p => p.id === postId)?.liked) {
       setUserPoints(prev => prev + 5)
     }
@@ -187,11 +400,93 @@ export default function FitnessApp() {
     setUserPoints(prev => prev + 30)
   }
 
+  const handleAddFood = (foodItem: FoodItem) => {
+    const newLog: DailyLog = {
+      id: dailyLogs.length + 1,
+      date: new Date().toISOString().split('T')[0],
+      foodItem,
+      quantity: 1,
+      mealType: selectedMealType
+    }
+    setDailyLogs([...dailyLogs, newLog])
+    setUserPoints(prev => prev + 25)
+  }
+
+  const generateMotivationalPost = () => {
+    setIsGeneratingAI(true)
+    
+    setTimeout(() => {
+      const motivationalPosts = [
+        {
+          content: `🔥 Parabéns pela sua sequência de ${userStreak} dias! Você está no caminho certo. Lembre-se: cada treino é um passo mais perto dos seus objetivos. Continue assim, guerreiro(a)! 💪`,
+          category: 'Motivação'
+        },
+        {
+          content: `⭐ Seu progresso é inspirador! Com ${userPoints} pontos acumulados, você está entre os melhores da comunidade. Que tal compartilhar suas dicas com outros membros? Juntos somos mais fortes! 🚀`,
+          category: 'Conquista'
+        },
+        {
+          content: `💡 Dica baseada no seu perfil: Seus treinos de força estão excelentes! Para maximizar resultados, considere adicionar 20-30g de proteína no pós-treino. Seu corpo agradece! 🥤`,
+          category: 'Nutrição'
+        },
+        {
+          content: `🎯 Meta da semana: Você completou ${completedCheckIns} check-ins! Faltam apenas ${7 - completedCheckIns} para bater seu recorde pessoal. Vamos lá, você consegue! 🏆`,
+          category: 'Desafio'
+        }
+      ]
+
+      const randomPost = motivationalPosts[Math.floor(Math.random() * motivationalPosts.length)]
+      
+      const newPost: Post = {
+        id: posts.length + 1,
+        author: 'FitLife AI Coach',
+        avatar: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=100&h=100&fit=crop',
+        time: 'agora',
+        content: randomPost.content,
+        likes: 0,
+        comments: 0,
+        liked: false,
+        isAIGenerated: true
+      }
+
+      setPosts([newPost, ...posts])
+      setIsGeneratingAI(false)
+      setUserPoints(prev => prev + 30)
+    }, 2000)
+  }
+
+  // Cálculos nutricionais
+  const todayLogs = dailyLogs.filter(log => log.date === new Date().toISOString().split('T')[0])
+  const totalCaloriesToday = todayLogs.reduce((sum, log) => sum + (log.foodItem.calories * log.quantity), 0)
+  const totalProteinToday = todayLogs.reduce((sum, log) => sum + (log.foodItem.protein * log.quantity), 0)
+  const totalCarbsToday = todayLogs.reduce((sum, log) => sum + (log.foodItem.carbs * log.quantity), 0)
+  const totalFatToday = todayLogs.reduce((sum, log) => sum + (log.foodItem.fat * log.quantity), 0)
+
+  const caloriesProgress = (totalCaloriesToday / nutritionGoals.calories) * 100
+  const proteinProgress = (totalProteinToday / nutritionGoals.protein) * 100
+  const carbsProgress = (totalCarbsToday / nutritionGoals.carbs) * 100
+  const fatProgress = (totalFatToday / nutritionGoals.fat) * 100
+
+  const filteredFoods = foodDatabase.filter(food => 
+    food.name.toLowerCase().includes(searchFood.toLowerCase())
+  )
+
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0)
   const totalProtein = meals.reduce((sum, meal) => sum + meal.protein, 0)
   const completedCheckIns = checkIns.filter(c => c.completed).length
   const nextLevelPoints = (userLevel + 1) * 200
   const levelProgress = (userPoints % 200) / 2
+
+  const getMealIcon = (mealType: string) => {
+    switch(mealType) {
+      case 'Café da Manhã': return <Coffee className="w-5 h-5" />
+      case 'Almoço': return <Utensils className="w-5 h-5" />
+      case 'Lanche': return <Apple className="w-5 h-5" />
+      case 'Jantar': return <Pizza className="w-5 h-5" />
+      case 'Ceia': return <Salad className="w-5 h-5" />
+      default: return <Utensils className="w-5 h-5" />
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
@@ -209,7 +504,6 @@ export default function FitnessApp() {
             </div>
             
             <div className="flex items-center gap-4">
-              {/* Pontos e Nível */}
               <div className="hidden sm:flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full">
                 <Star className="w-5 h-5 fill-current" />
                 <div className="text-sm">
@@ -218,7 +512,6 @@ export default function FitnessApp() {
                 </div>
               </div>
 
-              {/* Streak */}
               <div className="hidden md:flex items-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-full">
                 <Flame className="w-5 h-5 fill-current" />
                 <span className="font-bold">{userStreak} dias</span>
@@ -273,50 +566,224 @@ export default function FitnessApp() {
 
           {/* Feed Tab */}
           <TabsContent value="feed" className="space-y-6">
+            <Card className="p-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white shadow-xl border-0 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Brain className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      {aiTipOfDay.title}
+                      <Sparkles className="w-5 h-5" />
+                    </h3>
+                    <p className="text-sm opacity-90">Baseado no seu progresso • {aiTipOfDay.relevance}% relevante</p>
+                  </div>
+                </div>
+                
+                <p className="text-lg leading-relaxed mb-4">{aiTipOfDay.content}</p>
+                
+                <div className="flex items-center gap-3">
+                  <Badge className="bg-white/20 backdrop-blur-sm text-white border-0">
+                    {aiTipOfDay.category}
+                  </Badge>
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
+                  >
+                    Aplicar Sugestão
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    Resumo Semanal da Comunidade
+                    <Sparkles className="w-5 h-5 text-blue-500" />
+                  </h3>
+                  <p className="text-sm text-gray-500">Atividades mais populares esta semana</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {weeklyActivities.map((activity) => (
+                  <Card key={activity.id} className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200 hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-3xl">{activity.icon}</span>
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                        activity.trend === 'up' ? 'bg-green-100 text-green-700' :
+                        activity.trend === 'down' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {activity.trend === 'up' ? <TrendingUp className="w-3 h-3" /> :
+                         activity.trend === 'down' ? <TrendingDown className="w-3 h-3" /> :
+                         <Activity className="w-3 h-3" />}
+                        {activity.trend === 'up' ? '+12%' : activity.trend === 'down' ? '-5%' : '0%'}
+                      </div>
+                    </div>
+                    <h4 className="font-semibold text-gray-900 mb-1">{activity.activity}</h4>
+                    <p className="text-2xl font-bold text-blue-600">{activity.count}</p>
+                    <p className="text-xs text-gray-500">usuários ativos</p>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    Pessoas que Você Deveria Conhecer
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                  </h3>
+                  <p className="text-sm text-gray-500">Baseado nos seus interesses e objetivos</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {suggestedConnections.map((connection) => (
+                  <Card key={connection.id} className="p-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 hover:shadow-lg transition-all">
+                    <div className="flex flex-col items-center text-center">
+                      <Avatar className="w-20 h-20 mb-3 ring-4 ring-purple-500/20">
+                        <AvatarImage src={connection.avatar} />
+                        <AvatarFallback>{connection.name[0]}</AvatarFallback>
+                      </Avatar>
+                      
+                      <h4 className="font-bold text-gray-900 mb-1">{connection.name}</h4>
+                      
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-semibold">
+                          <Zap className="w-4 h-4" />
+                          {connection.matchPercentage}% compatível
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-4 w-full">
+                        <div className="text-left">
+                          <p className="text-xs font-semibold text-gray-600 mb-1">Interesses em comum:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {connection.commonInterests.map((interest, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {interest}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="text-left">
+                          <p className="text-xs font-semibold text-gray-600 mb-1">Objetivos:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {connection.goals.map((goal, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {goal}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                        size="sm"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Conectar
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+
             <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <div className="flex gap-4">
                 <Avatar className="w-12 h-12">
                   <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" />
                   <AvatarFallback>EU</AvatarFallback>
                 </Avatar>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start text-muted-foreground hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50">
-                      Compartilhe seu progresso... (+30 pts)
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Criar Post (+30 pontos)</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Textarea placeholder="O que você está fazendo hoje?" className="min-h-32" />
-                      <div className="flex gap-2">
-                        <Button 
-                          className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                          onClick={handlePost}
-                        >
-                          Publicar
-                        </Button>
-                        <Button variant="outline">Adicionar Foto</Button>
+                <div className="flex-1 space-y-3">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-muted-foreground hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50">
+                        Compartilhe seu progresso... (+30 pts)
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Criar Post (+30 pontos)</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Textarea placeholder="O que você está fazendo hoje?" className="min-h-32" />
+                        <div className="flex gap-2">
+                          <Button 
+                            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                            onClick={handlePost}
+                          >
+                            Publicar
+                          </Button>
+                          <Button variant="outline">Adicionar Foto</Button>
+                        </div>
                       </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white shadow-lg"
+                    onClick={generateMotivationalPost}
+                    disabled={isGeneratingAI}
+                  >
+                    {isGeneratingAI ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Gerando com IA...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Gerar Post Motivacional com IA (+30 pts)
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </Card>
 
             <div className="space-y-6">
               {posts.map((post) => (
-                <Card key={post.id} className="overflow-hidden bg-white/80 backdrop-blur-sm shadow-lg border-0 transition-all hover:shadow-xl">
+                <Card key={post.id} className={`overflow-hidden backdrop-blur-sm shadow-lg border-0 transition-all hover:shadow-xl ${
+                  post.isAIGenerated 
+                    ? 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 ring-2 ring-purple-500/30' 
+                    : 'bg-white/80'
+                }`}>
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <Avatar className="w-12 h-12 ring-2 ring-purple-500/20">
                         <AvatarImage src={post.avatar} />
                         <AvatarFallback>{post.author[0]}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-semibold text-gray-900">{post.author}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900">{post.author}</p>
+                          {post.isAIGenerated && (
+                            <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0 text-xs">
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              IA
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500">{post.time}</p>
                       </div>
                     </div>
@@ -433,103 +900,271 @@ export default function FitnessApp() {
             </div>
           </TabsContent>
 
-          {/* Diet Tab */}
+          {/* Diet Tab - APRIMORADO */}
           <TabsContent value="diet" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-3">
-              <Card className="p-6 bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-lg border-0">
-                <p className="text-sm opacity-90 mb-1">Calorias Totais</p>
-                <p className="text-3xl font-bold">{totalCalories}</p>
-                <p className="text-sm opacity-90">kcal/dia</p>
-              </Card>
-              <Card className="p-6 bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg border-0">
-                <p className="text-sm opacity-90 mb-1">Proteínas</p>
-                <p className="text-3xl font-bold">{totalProtein}g</p>
-                <p className="text-sm opacity-90">por dia</p>
-              </Card>
-              <Card className="p-6 bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg border-0">
-                <p className="text-sm opacity-90 mb-1">Refeições</p>
-                <p className="text-3xl font-bold">{meals.length}</p>
-                <p className="text-sm opacity-90">por dia</p>
-              </Card>
-            </div>
+            {/* Lembrete de Registro */}
+            <Card className="p-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg border-0">
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg">Lembrete: Registre sua próxima refeição!</h3>
+                  <p className="text-sm opacity-90">Não esqueça de registrar seu almoço para manter seu progresso em dia.</p>
+                </div>
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-0"
+                >
+                  Registrar Agora
+                </Button>
+              </div>
+            </Card>
 
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Plano Alimentar</h2>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600">
-                    <Plus className="w-4 h-4" />
-                    Nova Refeição (+25 pts)
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Refeição (+25 pontos)</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Nome da Refeição</Label>
-                      <Input placeholder="Ex: Café da Manhã" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Calorias</Label>
-                        <Input type="number" placeholder="350" />
-                      </div>
-                      <div>
-                        <Label>Proteínas (g)</Label>
-                        <Input type="number" placeholder="25" />
+            {/* Progresso Nutricional */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Progresso Nutricional Hoje</h3>
+                  <p className="text-sm text-gray-500">Acompanhe suas metas diárias</p>
+                </div>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {/* Calorias */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Calorias</span>
+                    <span className="text-sm font-bold text-gray-900">{totalCaloriesToday}/{nutritionGoals.calories}</span>
+                  </div>
+                  <Progress value={caloriesProgress} className="h-3" />
+                  <div className="flex items-center gap-2">
+                    {caloriesProgress >= 100 ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                    )}
+                    <span className="text-xs text-gray-600">
+                      {caloriesProgress >= 100 ? 'Meta atingida!' : `Faltam ${nutritionGoals.calories - totalCaloriesToday} kcal`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Proteínas */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Proteínas</span>
+                    <span className="text-sm font-bold text-blue-600">{totalProteinToday}g/{nutritionGoals.protein}g</span>
+                  </div>
+                  <Progress value={proteinProgress} className="h-3 [&>div]:bg-blue-500" />
+                  <div className="flex items-center gap-2">
+                    {proteinProgress >= 100 ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                    )}
+                    <span className="text-xs text-gray-600">
+                      {proteinProgress >= 100 ? 'Meta atingida!' : `Faltam ${nutritionGoals.protein - totalProteinToday}g`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Carboidratos */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Carboidratos</span>
+                    <span className="text-sm font-bold text-orange-600">{totalCarbsToday}g/{nutritionGoals.carbs}g</span>
+                  </div>
+                  <Progress value={carbsProgress} className="h-3 [&>div]:bg-orange-500" />
+                  <div className="flex items-center gap-2">
+                    {carbsProgress >= 100 ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                    )}
+                    <span className="text-xs text-gray-600">
+                      {carbsProgress >= 100 ? 'Meta atingida!' : `Faltam ${nutritionGoals.carbs - totalCarbsToday}g`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Gorduras */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">Gorduras</span>
+                    <span className="text-sm font-bold text-yellow-600">{totalFatToday}g/{nutritionGoals.fat}g</span>
+                  </div>
+                  <Progress value={fatProgress} className="h-3 [&>div]:bg-yellow-500" />
+                  <div className="flex items-center gap-2">
+                    {fatProgress >= 100 ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                    )}
+                    <span className="text-xs text-gray-600">
+                      {fatProgress >= 100 ? 'Meta atingida!' : `Faltam ${nutritionGoals.fat - totalFatToday}g`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Sugestões de Substituições com IA */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Sugestões Inteligentes de Substituições</h3>
+                  <p className="text-sm text-gray-500">Baseado nas suas preferências e metas nutricionais</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {foodSubstitutions.map((sub) => (
+                  <Card key={sub.id} className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-gray-600 line-through">{sub.original}</span>
+                          <ArrowRight className="w-4 h-4 text-purple-500" />
+                          <span className="font-semibold text-gray-900">{sub.substitute}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{sub.reason}</p>
+                        <div className="flex items-center gap-3">
+                          <Badge className="bg-green-100 text-green-700 border-0">
+                            {sub.caloriesDiff} kcal
+                          </Badge>
+                          <div className="flex items-center gap-1 text-sm text-purple-600">
+                            <Zap className="w-4 h-4" />
+                            <span className="font-semibold">{sub.matchPercentage}% compatível</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <Button 
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500"
-                      onClick={handleMealLog}
+                      size="sm" 
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                     >
-                      Adicionar
+                      Aplicar Substituição
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
 
-            <div className="space-y-4">
-              {meals.map((meal) => (
-                <Card key={meal.id} className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg text-gray-900">{meal.name}</h3>
-                      <p className="text-sm text-gray-500">{meal.time}</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Apple className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{meal.calories}</p>
-                      <p className="text-xs text-gray-500">kcal</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{meal.protein}g</p>
-                      <p className="text-xs text-gray-500">Proteína</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-orange-600">{meal.carbs}g</p>
-                      <p className="text-xs text-gray-500">Carbos</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-yellow-600">{meal.fat}g</p>
-                      <p className="text-xs text-gray-500">Gordura</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
+            {/* Adicionar Alimento */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Registrar Alimento (+25 pts)</h3>
+                <Select value={selectedMealType} onValueChange={(value: any) => setSelectedMealType(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Café da Manhã">Café da Manhã</SelectItem>
+                    <SelectItem value="Almoço">Almoço</SelectItem>
+                    <SelectItem value="Lanche">Lanche</SelectItem>
+                    <SelectItem value="Jantar">Jantar</SelectItem>
+                    <SelectItem value="Ceia">Ceia</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input 
+                  placeholder="Buscar alimento no banco de dados..." 
+                  className="pl-10"
+                  value={searchFood}
+                  onChange={(e) => setSearchFood(e.target.value)}
+                />
+              </div>
+
+              <ScrollArea className="h-96">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {filteredFoods.map((food) => (
+                    <Card key={food.id} className="p-4 hover:shadow-md transition-all cursor-pointer" onClick={() => handleAddFood(food)}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{food.name}</h4>
+                          <p className="text-xs text-gray-500 mb-2">{food.portion}</p>
+                          <Badge variant="outline" className="text-xs">{food.category}</Badge>
+                        </div>
+                        <Plus className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{food.calories}</p>
+                          <p className="text-xs text-gray-500">kcal</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-blue-600">{food.protein}g</p>
+                          <p className="text-xs text-gray-500">Prot</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-orange-600">{food.carbs}g</p>
+                          <p className="text-xs text-gray-500">Carb</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-yellow-600">{food.fat}g</p>
+                          <p className="text-xs text-gray-500">Gord</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </Card>
+
+            {/* Registro Diário */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Registro de Hoje</h3>
+              
+              <div className="space-y-4">
+                {['Café da Manhã', 'Almoço', 'Lanche', 'Jantar', 'Ceia'].map((mealType) => {
+                  const mealLogs = todayLogs.filter(log => log.mealType === mealType)
+                  const mealCalories = mealLogs.reduce((sum, log) => sum + (log.foodItem.calories * log.quantity), 0)
+                  
+                  return (
+                    <Card key={mealType} className="p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                            {getMealIcon(mealType)}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{mealType}</h4>
+                            <p className="text-sm text-gray-500">{mealCalories} kcal</p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">{mealLogs.length} itens</Badge>
+                      </div>
+                      
+                      {mealLogs.length > 0 ? (
+                        <div className="space-y-2 mt-3 pt-3 border-t">
+                          {mealLogs.map((log) => (
+                            <div key={log.id} className="flex items-center justify-between text-sm">
+                              <span className="text-gray-700">{log.quantity}x {log.foodItem.name}</span>
+                              <span className="font-semibold text-gray-900">{log.foodItem.calories * log.quantity} kcal</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 mt-3 pt-3 border-t">Nenhum alimento registrado</p>
+                      )}
+                    </Card>
+                  )
+                })}
+              </div>
+            </Card>
           </TabsContent>
 
-          {/* Gamification Tab - NOVO */}
+          {/* Gamification Tab */}
           <TabsContent value="gamification" className="space-y-6">
-            {/* Stats do Usuário */}
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="p-6 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-xl border-0">
                 <div className="flex items-center justify-between mb-4">
@@ -574,7 +1209,6 @@ export default function FitnessApp() {
               </Card>
             </div>
 
-            {/* Quadro de Líderes */}
             <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
@@ -597,7 +1231,6 @@ export default function FitnessApp() {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      {/* Rank */}
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl ${
                         user.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white' :
                         user.rank === 2 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' :
@@ -610,7 +1243,6 @@ export default function FitnessApp() {
                          `#${user.rank}`}
                       </div>
 
-                      {/* Avatar e Info */}
                       <Avatar className="w-12 h-12 ring-2 ring-purple-500/20">
                         <AvatarImage src={user.avatar} />
                         <AvatarFallback>{user.name[0]}</AvatarFallback>
@@ -639,7 +1271,6 @@ export default function FitnessApp() {
               </div>
             </Card>
 
-            {/* Badges de Conquista */}
             <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -686,7 +1317,6 @@ export default function FitnessApp() {
               </div>
             </Card>
 
-            {/* Sistema de Pontos */}
             <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg border-0">
               <h3 className="text-xl font-bold text-gray-900 mb-4">Como Ganhar Pontos</h3>
               <div className="grid gap-3 md:grid-cols-2">
